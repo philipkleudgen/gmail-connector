@@ -405,6 +405,64 @@ const TOOLS = [
       });
     },
   },
+  {
+    name: "gmail_list_labels",
+    description:
+      "List the mailbox's labels with their ids. Use it to resolve a user label's display name to the id that gmail_modify_labels expects.",
+    inputSchema: { type: "object", properties: {} },
+    handler: async () => {
+      const { data } = await gmail.users.labels.list({ userId: "me" });
+      const labels = (data.labels ?? []).map((l) => ({ id: l.id, name: l.name, type: l.type }));
+      return jsonResult({ count: labels.length, labels });
+    },
+  },
+  {
+    name: "gmail_modify_labels",
+    description:
+      'Add and/or remove labels on a message or a whole thread. Archiving is removing "INBOX"; marking read is removing "UNREAD". System ids are literal ("INBOX", "UNREAD", "STARRED", "IMPORTANT"); for a user label pass the id from gmail_list_labels, not its display name.',
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: { type: "string", description: "Message id or thread id — see target." },
+        target: {
+          type: "string",
+          enum: ["message", "thread"],
+          description: "Whether id refers to a single message or a whole thread (default 'message').",
+        },
+        add_label_ids: {
+          type: "array",
+          items: { type: "string" },
+          description: 'Label ids to add, e.g. ["IMPORTANT"].',
+        },
+        remove_label_ids: {
+          type: "array",
+          items: { type: "string" },
+          description: 'Label ids to remove, e.g. ["INBOX","UNREAD"].',
+        },
+      },
+      required: ["id"],
+    },
+    handler: async ({ id, target = "message", add_label_ids = [], remove_label_ids = [] }) => {
+      if (add_label_ids.length === 0 && remove_label_ids.length === 0) {
+        throw new Error("Nothing to change: pass add_label_ids and/or remove_label_ids.");
+      }
+      const api = target === "thread" ? gmail.users.threads : gmail.users.messages;
+      const { data } = await api.modify({
+        userId: "me",
+        id,
+        requestBody: { addLabelIds: add_label_ids, removeLabelIds: remove_label_ids },
+      });
+      return jsonResult({
+        ok: true,
+        id: data.id,
+        target,
+        // threads.modify answers with its messages, not with one label set.
+        labelIds: target === "thread" ? undefined : data.labelIds,
+        addLabelIds: add_label_ids,
+        removeLabelIds: remove_label_ids,
+      });
+    },
+  },
 ];
 
 const BY_NAME = new Map(TOOLS.map((t) => [t.name, t]));
@@ -429,7 +487,7 @@ async function handle(msg) {
           ? params.protocolVersion
           : OUR_PROTOCOL,
         capabilities: { tools: { listChanged: false } },
-        serverInfo: { name: "gmail-local", version: "1.1.0" },
+        serverInfo: { name: "gmail-local", version: "1.2.0" },
       });
 
     case "tools/list":

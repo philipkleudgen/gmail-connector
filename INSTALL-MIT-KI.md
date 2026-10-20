@@ -410,8 +410,9 @@ In der Claude-Desktop-App stattdessen in `claude_desktop_config.json`:
 }
 ```
 
-Danach kennt der Assistent sieben Werkzeuge — Profil, Suchen, Verlauf lesen, Nachricht
-lesen, Anhänge herunterladen, Entwurf anlegen, Senden. Senden und Entwurf nehmen **Anhänge**
+Danach kennt der Assistent neun Werkzeuge: Profil, Suchen, Verlauf lesen, Nachricht
+lesen, Anhänge herunterladen, Entwurf anlegen, Senden, Labels auflisten und Labels setzen
+(damit auch archivieren und als gelesen markieren). Senden und Entwurf nehmen **Anhänge**
 entgegen; weil der Server auf deinem Rechner läuft, genügt der Dateipfad, und die Datei wird
 direkt von der Festplatte gelesen.
 
